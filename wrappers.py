@@ -2,6 +2,7 @@ from sklearn.base import TransformerMixin
 import youtokentome as yttm
 import numpy as np
 from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk.tokenize.casual import TweetTokenizer
 from tempfile import NamedTemporaryFile
 import gensim.downloader as api
 from nltk.corpus import stopwords
