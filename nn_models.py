@@ -17,7 +17,7 @@ class SimpleNN(nn.Module):
                                  nn.Linear(input_size // 4, n_classes)
                                  )
         
-    def forward(self, input_weights):
+    def forward(self, input_weights, **kwargs):
         logits = self.net(input_weights)
         return logits
     
@@ -68,7 +68,7 @@ class SimpleRNN(nn.Module):
 
 
 class SimpleCNN(nn.Module):
-    def __init__(self, num_embeddings=10000, input_size=128, n_classes=2, from_pretrained=False, vectors=None):
+    def __init__(self, num_embeddings=10000, input_size=128, n_classes=2, from_pretrained=False, vectors=None, **kwargs):
         super().__init__()
 
         if from_pretrained:
@@ -99,9 +99,10 @@ class SimpleCNN(nn.Module):
 
 
 class CombinedCNN(nn.Module):
-    def __init__(self, num_embeddings, input_size, kernels, dropout_prob=0.3, n_classes=2, from_pretrained=False, vectors=None):
+    def __init__(self, num_embeddings=10000, input_size=64, kernels=[3], dropout_prob=0.3, n_classes=2, from_pretrained=False, vectors=None, **kwargs):
         super().__init__()
 
+        self.kernels = kernels
         if from_pretrained:
             num_embeddings, input_size = vectors.shape
             self.embedding = nn.Embedding.from_pretrained(torch.tensor(vectors))
@@ -111,7 +112,7 @@ class CombinedCNN(nn.Module):
         self.conv_blocks = nn.ModuleList([nn.Sequential(nn.Conv1d(in_channels=input_size, 
                                                                   out_channels=input_size // 2, 
                                                                   kernel_size=kernel), 
-                                                        nn.BatchNorm1d(input_size // 2)
+                                                        nn.BatchNorm1d(input_size // 2),
                                                         nn.ReLU(), 
                                                         nn.MaxPool1d(kernel)) for kernel in kernels])
         self.fc = nn.Sequential(nn.AdaptiveMaxPool1d(1024), 
@@ -134,7 +135,7 @@ class CombinedCNN(nn.Module):
 
 
 class RCNN(nn.Module):
-    def __init__(self, rnn_class, num_embeddings, input_size, hidden_size, num_layers=1, 
+    def __init__(self, rnn_class, num_embeddings=10000, input_size=128, hidden_size=64, num_layers=1, 
                  dropout_prob=0.3, bias=True, batch_first=True, kernel=3, n_classes=2, from_pretrained=False, vectors=None):
         super().__init__()
         

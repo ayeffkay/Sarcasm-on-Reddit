@@ -1,10 +1,11 @@
-from torchtext.data import BucketIterator, Field, Example, Dataset
+from torchtext.data import BucketIterator, Field, Example, Dataset, TabularDataset
 import torch
 import wrappers
 from scipy.sparse import vstack
 from transformers import BertTokenizer
 from tqdm import tqdm
 import random
+import pandas as pd
 
 
 
@@ -143,7 +144,7 @@ class DatasetsTokenizeBert(BaseDataset):
         return self.tokenizer.encode_plus(text=x, text_pair=y, 
                                    return_token_type_ids=True, 
                                    return_attention_mask=True, 
-                                   truncation=True)[field]
+                                   truncation=True, max_length=256)[field]
 
 
     def make_examples(self, data):

@@ -4,12 +4,16 @@ import torch
 import torch.nn as nn
 from torchtext.data import BucketIterator
 from transformers.optimization import AdamW
+import copy
+from sklearn import metrics
+import matplotlib.pyplot as plt
 
 
 class ClassificationModel(LightningModule):
-    def __init__(self, model, train_data, valid_data, test_data, lr=1e-3, batch_size=128):
+    def __init__(self, model, train_data, valid_data, test_data, lr=1e-3, batch_size=128, is_bert=False):
         super().__init__()
         self.model = model
+        self.is_bert = is_bert
 
         self.auc = pl.metrics.functional.classification.auroc
         self.roc = pl.metrics.functional.classification.roc
@@ -43,7 +47,10 @@ class ClassificationModel(LightningModule):
 
 
     def configure_optimizers(self):
-        optimizer = AdamW(self.model.parameters(), lr=self.lr)
+        if self.is_bert:
+            optimizer = AdamW(self.model.parameters(), lr=self.lr)
+        else:
+            optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         return {'optimizer': optimizer, 
                 'lr_scheduler': torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min'), 
                 'monitor': 'valid_loss', 
@@ -52,7 +59,7 @@ class ClassificationModel(LightningModule):
 
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
-        logits = self.model(input_ids, attention_mask, token_type_ids)
+        logits = self.model(input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
         return logits
 
 
