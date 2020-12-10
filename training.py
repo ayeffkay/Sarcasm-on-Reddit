@@ -20,6 +20,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.model_selection import cross_validate, StratifiedShuffleSplit
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import LinearSVC
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, roc_auc_score
 from xgboost import XGBClassifier
 from vowpalwabbit.sklearn_vw import VWClassifier
@@ -100,7 +101,36 @@ for preproc_conf in tqdm(preprocessing_configurations, desc='optimization...'):
     X_test_features = preprocessor.transform(X_test)
     del preprocessor
     print(f'preprocessing took {time() - t:.4f} seconds')
-
+    
+    t = time()
+    gs = optimize_grid(
+        LinearSVC(dual=False),
+        {'C': [.1, .5,  1., 3, 5,], 'penalty': ['l1', 'l2']},
+        n_jobs=16, verbose=10
+    ).fit(X_train_features, y_train.astype(np.bool))
+    result[(preproc_conf, 'svm')] = gs.cv_results_
+    agg[(preproc_conf, 'svm')] = calc_metrics(
+        gs.best_estimator_, X_test_features, y_test.astype(np.bool),
+        X_train_features, y_train.astype(np.bool))
+    agg[(preproc_conf, 'svm')]['best_params'] = gs.best_params_
+    print(agg[(preproc_conf, 'svm')])
+    print(f'svm training took {time() - t:.4f} seconds')
+    
+    t = time()
+    gs = optimize_grid(
+        LogisticRegression(solver='liblinear', penalty='l1'),
+        {'C': [.01, .1, .2, .5, .8, 1., 3, 5, 10]},
+        n_jobs=16, verbose=10
+    ).fit(X_train_features, y_train.astype(np.bool))
+    result[(preproc_conf, 'sparse_logreg')] = gs.cv_results_
+    agg[(preproc_conf, 'sparse_logreg')] = calc_metrics(
+        gs.best_estimator_, X_test_features, y_test.astype(np.bool),
+        X_train_features, y_train.astype(np.bool))
+    agg[(preproc_conf, 'sparse_logreg')]['best_params'] = gs.best_params_
+    print(agg[(preproc_conf, 'sparse_logreg')])
+    print(f'sparse_logreg training took {time() - t:.4f} seconds')
+    
+    
     t = time()
     gs = optimize_grid(
         LogisticRegression(solver='liblinear'),
@@ -114,20 +144,6 @@ for preproc_conf in tqdm(preprocessing_configurations, desc='optimization...'):
     agg[(preproc_conf, 'logreg')]['best_params'] = gs.best_params_
     print(agg[(preproc_conf, 'logreg')])
     print(f'logreg training took {time() - t:.4f} seconds')
-
-#     t = time()
-#     gs = optimize_grid(
-#         OnlineSVM(),
-#         {'l2': [0.1, 0.5, 1., 3., 5.],
-#          'ksvm': [False, True], 'kernel': ['rbf']},
-#         n_jobs=10, verbose=10
-#     ).fit(X_train_features, y_train.astype(np.bool))
-#     result[(preproc_conf, 'svm')] = gs.cv_results_
-#     agg[(preproc_conf, 'svm')] = calc_metrics(
-#         gs.best_estimator_, X_test_features, y_test.astype(np.bool),
-#         X_train_features, y_train.astype(np.bool))
-#     agg[(preproc_conf, 'svm')]['best_params'] = gs.best_params_
-#     print(f'svm training took {time() - t:.4f} seconds')
 
     t = time()
     gs = optimize_grid(
